@@ -11,12 +11,14 @@
         <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3">
             <nav class="flex flex-wrap items-center gap-5 text-sm">
                 <a href="{{ route('dashboard') }}" class="font-semibold">SIKAP KAMPAR</a>
+                <a href="{{ route('dashboard') }}" class="hover:underline">Dashboard</a>
                 @can('price.view')
                     <a href="{{ route('prices.index') }}" class="hover:underline">Harga Pangan</a>
                 @endcan
                 @can('stock.view')
                     <a href="{{ route('stock.index') }}" class="hover:underline">Stok dan Cadangan</a>
                 @endcan
+                <a href="{{ route('public.prices') }}" target="_blank" rel="noopener" class="hover:underline">Portal publik</a>
             </nav>
             @auth
                 <form method="POST" action="{{ route('logout') }}" class="flex items-center gap-3 text-sm">

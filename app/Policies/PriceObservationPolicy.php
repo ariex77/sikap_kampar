@@ -55,6 +55,14 @@ class PriceObservationPolicy
         return $this->verify($user, $price);
     }
 
+    /** Penarikan dari publikasi: izin publication.manage (Kepala Dinas), hanya data terbit yang belum ditarik. */
+    public function unpublish(User $user, PriceObservation $price): bool
+    {
+        return $user->can('publication.manage')
+            && $price->status === 'published'
+            && ! \App\Services\PriceWorkflow::isRetracted($price->id);
+    }
+
     private function isEditableByOwner(User $user, PriceObservation $price): bool
     {
         return in_array($price->status, ['draft', 'rejected'], true)

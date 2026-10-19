@@ -126,6 +126,57 @@ class PriceWorkflow
         });
     }
 
+    /**
+     * Menarik harga terbit dari publikasi (misalnya salah input yang lolos verifikasi).
+     * Data tidak dihapus: status tetap "terbit", tetapi publikasi ditandai ditarik beserta alasan,
+     * sehingga tidak lagi tampil di portal publik dan tidak dihitung di dashboard.
+     */
+    public function unpublish(PriceObservation $price, User $by, string $reason): void
+    {
+        DB::transaction(function () use ($price, $by, $reason) {
+            $p = $this->lock($price);
+
+            if ($p->status !== 'published') {
+                throw new DomainException('Hanya data yang sudah terbit yang dapat ditarik.');
+            }
+            if (blank(trim($reason))) {
+                throw new DomainException('Alasan penarikan wajib diisi.');
+            }
+
+            $publication = DB::table('publications')
+                ->where('publishable_type', $p->getMorphClass())
+                ->where('publishable_id', $p->id)
+                ->whereNull('unpublished_at')
+                ->lockForUpdate()
+                ->orderByDesc('id')
+                ->first();
+
+            if (! $publication) {
+                throw new DomainException('Data ini sudah ditarik dari publikasi.');
+            }
+
+            DB::table('publications')->where('id', $publication->id)->update([
+                'unpublished_by'   => $by->id,
+                'unpublished_at'   => now(),
+                'unpublish_reason' => trim($reason),
+            ]);
+
+            $p->forceFill(['updated_by' => $by->id])->save();
+
+            $this->history($p, 'published', 'unpublished', $by, trim($reason));
+            Audit::log('unpublished', 'price_observation', $p->id, ['published' => true], ['published' => false, 'reason' => trim($reason)]);
+        });
+    }
+
+    public static function isRetracted(int $priceId): bool
+    {
+        return DB::table('publications')
+            ->where('publishable_type', (new PriceObservation())->getMorphClass())
+            ->where('publishable_id', $priceId)
+            ->whereNotNull('unpublished_at')
+            ->exists();
+    }
+
     // ---------------------------------------------------------------
 
     private function lock(PriceObservation $price): PriceObservation
@@ -153,6 +204,12 @@ class PriceWorkflow
             ->where('market_id', $p->market_id)
             ->where('commodity_id', $p->commodity_id)
             ->where('status', 'published')
+            ->whereNotExists(function ($sub) {
+                $sub->from('publications')
+                    ->whereColumn('publications.publishable_id', 'price_observations.id')
+                    ->where('publications.publishable_type', (new PriceObservation())->getMorphClass())
+                    ->whereNotNull('publications.unpublished_at');
+            })
             ->whereDate('observed_on', '<', $p->observed_on->toDateString())
             ->orderByDesc('observed_on')
             ->value('price');

@@ -7,6 +7,7 @@ use App\Models\PriceObservation;
 use App\Services\PriceWorkflow;
 use DomainException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -78,7 +79,7 @@ class Index extends Component
 
     public function openPanel(int $id, string $type): void
     {
-        if (! in_array($type, ['verify', 'reject'], true)) {
+        if (! in_array($type, ['verify', 'reject', 'unpublish'], true)) {
             return;
         }
 
@@ -112,6 +113,15 @@ class Index extends Component
                 $this->authorize('verify', $price);
                 $workflow->verify($price, $user, trim($this->note) ?: null);
                 session()->flash('status', 'Harga diverifikasi dan diterbitkan.');
+            } elseif ($this->panelType === 'unpublish') {
+                $this->authorize('unpublish', $price);
+                $this->validate(
+                    ['note' => ['required', 'string', 'min:5', 'max:500']],
+                    [],
+                    ['note' => 'alasan penarikan']
+                );
+                $workflow->unpublish($price, $user, trim($this->note));
+                session()->flash('status', 'Harga ditarik dari publikasi. Data tetap tersimpan dan tidak lagi tampil di portal publik.');
             } elseif ($this->panelType === 'reject') {
                 $this->authorize('reject', $price);
                 $this->validate(
@@ -136,6 +146,14 @@ class Index extends Component
         $this->authorize('viewAny', PriceObservation::class);
 
         $rows = PriceObservation::query()
+            ->select('price_observations.*')
+            ->addSelect(['retracted_at' => DB::table('publications')
+                ->select('unpublished_at')
+                ->whereColumn('publications.publishable_id', 'price_observations.id')
+                ->where('publications.publishable_type', (new PriceObservation())->getMorphClass())
+                ->whereNotNull('unpublished_at')
+                ->orderByDesc('id')
+                ->limit(1)])
             ->with(['market', 'commodity', 'unit', 'creator'])
             ->when($this->status !== '', fn ($q) => $q->where('status', $this->status))
             ->when($this->commodity !== '', fn ($q) => $q->where('commodity_id', (int) $this->commodity))

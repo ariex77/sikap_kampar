@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\PublicPortalController;
+use App\Livewire\Dashboard;
 use App\Livewire\Prices\Form as PriceForm;
 use App\Livewire\Prices\Index as PriceIndex;
 use App\Livewire\Stock\Form as StockForm;
@@ -8,6 +10,11 @@ use App\Livewire\Stock\Index as StockIndex;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
+
+// Portal publik: tanpa login, hanya informasi yang sudah terbit. Dibatasi 60 permintaan per menit per alamat.
+Route::get('/publik', [PublicPortalController::class, 'index'])
+    ->middleware('throttle:60,1')
+    ->name('public.prices');
 
 // Hanya untuk tamu (belum login)
 Route::middleware('guest')->group(function () {
@@ -19,7 +26,7 @@ Route::middleware('guest')->group(function () {
 // Hanya untuk pengguna yang sudah login
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
-    Route::view('/dashboard', 'dashboard')->name('dashboard');
+    Route::get('/dashboard', Dashboard::class)->name('dashboard');
 
     // Modul harga pangan
     Route::prefix('harga')->name('prices.')->middleware('can:price.view')->group(function () {

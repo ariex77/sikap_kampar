@@ -20,7 +20,7 @@
     @if ($panelPrice)
         <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
             <p class="font-medium">
-                {{ $panelType === 'verify' ? 'Verifikasi' : 'Tolak' }}:
+                {{ ['verify' => 'Verifikasi', 'reject' => 'Tolak', 'unpublish' => 'Tarik dari publikasi'][$panelType] ?? '' }}:
                 {{ $panelPrice->commodity->name }} di {{ $panelPrice->market->name }},
                 {{ $panelPrice->observed_on->format('d/m/Y') }},
                 Rp {{ number_format((float) $panelPrice->price, 0, ',', '.') }}
@@ -36,7 +36,7 @@
             @endif
 
             <label for="note" class="mt-3 block text-sm font-medium">
-                {{ $panelType === 'verify' ? 'Catatan verifikasi' : 'Alasan penolakan (wajib)' }}
+                {{ ['verify' => 'Catatan verifikasi', 'reject' => 'Alasan penolakan (wajib)', 'unpublish' => 'Alasan penarikan (wajib)'][$panelType] ?? '' }}
             </label>
             <textarea id="note" wire:model="note" rows="2"
                       class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"></textarea>
@@ -45,7 +45,7 @@
             <div class="mt-3 flex gap-2">
                 <button type="button" wire:click="confirmPanel"
                         class="rounded px-4 py-2 text-sm font-medium text-white {{ $panelType === 'verify' ? 'bg-emerald-700 hover:bg-emerald-800' : 'bg-red-600 hover:bg-red-700' }}">
-                    {{ $panelType === 'verify' ? 'Verifikasi dan terbitkan' : 'Tolak dan kembalikan' }}
+                    {{ ['verify' => 'Verifikasi dan terbitkan', 'reject' => 'Tolak dan kembalikan', 'unpublish' => 'Tarik dari publikasi'][$panelType] ?? '' }}
                 </button>
                 <button type="button" wire:click="cancelPanel"
                         class="rounded border border-gray-300 bg-white px-4 py-2 text-sm">Batal</button>
@@ -122,6 +122,9 @@
                         </td>
                         <td class="px-3 py-2">
                             <span class="rounded px-2 py-0.5 text-xs {{ $badge }}">{{ $row->statusLabel() }}</span>
+                            @if ($row->retracted_at)
+                                <span class="ml-1 rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800">Ditarik dari publikasi</span>
+                            @endif
                             @if ($row->status === 'rejected' && $row->rejection_reason)
                                 <p class="mt-1 max-w-xs text-xs text-red-700">{{ $row->rejection_reason }}</p>
                             @endif
@@ -142,6 +145,10 @@
                             @can('reject', $row)
                                 <button type="button" wire:click="openPanel({{ $row->id }}, 'reject')"
                                         class="ml-2 text-red-600 hover:underline">Tolak</button>
+                            @endcan
+                            @can('unpublish', $row)
+                                <button type="button" wire:click="openPanel({{ $row->id }}, 'unpublish')"
+                                        class="ml-2 text-amber-700 hover:underline">Tarik</button>
                             @endcan
                             @can('delete', $row)
                                 <button type="button" wire:click="deletePrice({{ $row->id }})"
