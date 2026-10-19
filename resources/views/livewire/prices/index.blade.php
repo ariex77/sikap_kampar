@@ -1,10 +1,16 @@
 <div>
     <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h1 class="text-2xl font-semibold">Harga Pangan</h1>
-        @can('create', \App\Models\PriceObservation::class)
-            <a href="{{ route('prices.create') }}"
-               class="rounded bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800">+ Input harga</a>
-        @endcan
+        <div class="flex items-center gap-2">
+            @can('import.run')
+                <a href="{{ route('prices.import') }}"
+                   class="rounded border border-emerald-700 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50">Impor CSV</a>
+            @endcan
+            @can('create', \App\Models\PriceObservation::class)
+                <a href="{{ route('prices.create') }}"
+                   class="rounded bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800">+ Input harga</a>
+            @endcan
+        </div>
     </div>
 
     @if (session('status'))

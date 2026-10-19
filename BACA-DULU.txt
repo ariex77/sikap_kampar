@@ -1,8 +1,0 @@
-DASHBOARD + PORTAL PUBLIK - SIKAP KAMPAR
-1. Salin semua isi zip ke root proyek (timpa routes/web.php dan resources/views/layouts/app.blade.php).
-2. Hapus file lama: resources/views/dashboard.blade.php
-3. npm install chart.js
-4. Tambahkan baris ini di resources/js/app.js:   import './charts';
-5. php artisan optimize:clear
-6. php artisan test
-7. npm run dev (atau npm run build), lalu buka /dashboard (login) dan /publik (tanpa login).

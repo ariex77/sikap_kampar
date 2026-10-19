@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\PublicPortalController;
 use App\Livewire\Dashboard;
 use App\Livewire\Prices\Form as PriceForm;
+use App\Livewire\Prices\Import as PriceImport;
 use App\Livewire\Prices\Index as PriceIndex;
 use App\Livewire\Stock\Form as StockForm;
 use App\Livewire\Stock\Index as StockIndex;
@@ -32,6 +33,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('harga')->name('prices.')->middleware('can:price.view')->group(function () {
         Route::get('/', PriceIndex::class)->name('index');
         Route::get('/baru', PriceForm::class)->name('create');
+        Route::get('/impor', PriceImport::class)->name('import')->middleware('can:import.run');
         Route::get('/{priceId}/ubah', PriceForm::class)->name('edit')->whereNumber('priceId');
     });
 
